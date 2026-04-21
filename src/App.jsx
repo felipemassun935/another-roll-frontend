@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import Dice from './components/Dice';
 import GamePage from './components/GamePage';
+import CartDrawer from './components/CartDrawer';
+import { useCart } from './context/CartContext';
+import StorePage from './pages/StorePage';
+import CheckoutPage from './pages/CheckoutPage';
 
 const FALLBACK_GAMES = [
   {
@@ -59,23 +64,13 @@ const FALLBACK_GAMES = [
   },
 ];
 
-export default function App() {
-  const [games, setGames] = useState(FALLBACK_GAMES);
+function DiceLanding({ games }) {
   const [rolledFace, setRolledFace] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
 
-  useEffect(() => {
-    fetch('/api/games')
-      .then((r) => r.json())
-      .then((data) => Array.isArray(data) && data.length === 6 && setGames(data))
-      .catch(() => {}); // silently use fallback
-  }, []);
-
   const currentGame = rolledFace ? games.find((g) => g.id === rolledFace) ?? null : null;
 
-  const handleRoll = (face) => {
-    setRolledFace(face);
-  };
+  const handleRoll = (face) => setRolledFace(face);
 
   const handleReroll = () => {
     setRolledFace(null);
@@ -114,19 +109,22 @@ export default function App() {
           </span>
         </button>
 
-        {currentGame && (
-          <button
-            onClick={handleReroll}
-            className="text-sm px-4 py-2 rounded-xl font-semibold transition-all hover:scale-105"
-            style={{
-              background: currentGame.theme.cardBg,
-              border: `1px solid ${currentGame.theme.border}`,
-              color: currentGame.theme.accent,
-            }}
-          >
-            Roll Again
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {currentGame && (
+            <button
+              onClick={handleReroll}
+              className="text-sm px-4 py-2 rounded-xl font-semibold transition-all hover:scale-105"
+              style={{
+                background: currentGame.theme.cardBg,
+                border: `1px solid ${currentGame.theme.border}`,
+                color: currentGame.theme.accent,
+              }}
+            >
+              Roll Again
+            </button>
+          )}
+          <HeaderActions theme={currentGame?.theme} />
+        </div>
       </header>
 
       {/* Main content */}
@@ -200,5 +198,67 @@ export default function App() {
         </main>
       )}
     </div>
+  );
+}
+
+function HeaderActions({ theme }) {
+  const navigate = useNavigate();
+  const { count, setIsOpen } = useCart();
+
+  return (
+    <div className="flex items-center gap-3">
+      <button
+        onClick={() => navigate('/store')}
+        className="text-sm px-4 py-2 rounded-xl font-semibold transition-all hover:scale-105"
+        style={{
+          background: theme ? theme.cardBg : 'rgba(255,255,255,0.06)',
+          border: `1px solid ${theme ? theme.border : 'rgba(255,255,255,0.1)'}`,
+          color: theme ? theme.accent : '#e0e0e0',
+        }}
+      >
+        Store
+      </button>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="relative flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl transition-all hover:scale-105"
+        style={{
+          background: theme ? theme.cardBg : 'rgba(255,255,255,0.06)',
+          border: `1px solid ${theme ? theme.border : 'rgba(255,255,255,0.1)'}`,
+          color: theme ? theme.muted : 'rgba(255,255,255,0.5)',
+        }}
+      >
+        🛒
+        {count > 0 && (
+          <span
+            className="px-1.5 py-0.5 rounded-full text-xs font-bold"
+            style={{ background: '#7c3aed', color: '#c4b5fd' }}
+          >
+            {count}
+          </span>
+        )}
+      </button>
+    </div>
+  );
+}
+
+export default function App() {
+  const [games, setGames] = useState(FALLBACK_GAMES);
+
+  useEffect(() => {
+    fetch('/api/games')
+      .then((r) => r.json())
+      .then((data) => Array.isArray(data) && data.length === 6 && setGames(data))
+      .catch(() => {});
+  }, []);
+
+  return (
+    <>
+      <CartDrawer />
+      <Routes>
+        <Route path="/" element={<DiceLanding games={games} />} />
+        <Route path="/store" element={<StorePage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+      </Routes>
+    </>
   );
 }

@@ -1,7 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCart } from '../../context/CartContext';
 
 export default function BuySection({ game, onReroll }) {
   const ref = useRef(null);
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const [added, setAdded] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -13,6 +18,12 @@ export default function BuySection({ game, onReroll }) {
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  const handleAddToCart = () => {
+    addToCart(game);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
 
   return (
     <section
@@ -40,22 +51,41 @@ export default function BuySection({ game, onReroll }) {
           ${game.price.toFixed(2)}
         </p>
 
+        {/* Add to Cart */}
         <button
-          className="px-12 py-5 rounded-2xl text-xl font-bold tracking-wider mb-6 w-full max-w-xs transition-all duration-200 hover:scale-105 active:scale-95"
+          onClick={handleAddToCart}
+          className="px-12 py-5 rounded-2xl text-xl font-bold tracking-wider mb-4 w-full max-w-xs transition-all duration-300 hover:scale-105 active:scale-95"
           style={{
-            background: `linear-gradient(135deg, ${game.theme.primary}, ${game.theme.secondary})`,
+            background: added
+              ? `${game.theme.secondary}33`
+              : `linear-gradient(135deg, ${game.theme.primary}, ${game.theme.secondary})`,
             color: game.theme.accent,
             fontFamily: 'Cinzel, serif',
-            boxShadow: `0 8px 40px ${game.theme.glow}`,
+            boxShadow: added ? 'none' : `0 8px 40px ${game.theme.glow}`,
+            border: added ? `1px solid ${game.theme.border}` : 'none',
           }}
         >
-          Add to Cart
+          {added ? '✓ Added to Cart' : 'Add to Cart'}
+        </button>
+
+        {/* Go to store */}
+        <button
+          onClick={() => navigate('/store')}
+          className="px-12 py-4 rounded-2xl text-base font-semibold tracking-wider w-full max-w-xs transition-all hover:scale-105"
+          style={{
+            background: 'transparent',
+            border: `1px solid ${game.theme.border}`,
+            color: game.theme.muted,
+            fontFamily: 'Cinzel, serif',
+          }}
+        >
+          View All Games
         </button>
 
         <div className="mt-8">
           <button
             onClick={onReroll}
-            className="text-sm underline underline-offset-4 opacity-60 hover:opacity-100 transition-opacity"
+            className="text-sm underline underline-offset-4 opacity-50 hover:opacity-90 transition-opacity"
             style={{ color: game.theme.text }}
           >
             Roll again — discover another game
